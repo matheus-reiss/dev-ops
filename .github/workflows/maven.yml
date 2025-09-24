@@ -35,14 +35,14 @@ jobs:
           cache: maven
 
       - name: Run tests (JUnit 4)
-        run: mvn -B -q test
+        run: mvn -B -q -f Ci-Cd/pom.xml test
 
       - name: Upload Surefire reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-reports
-          path: "**/target/surefire-reports/**"
+          path: "Ci-Cd/**/target/surefire-reports/**"
 
   static-checks:
     runs-on: ubuntu-latest
@@ -52,7 +52,7 @@ jobs:
         run: bash scripts/install_dependencies.sh
       - name: Quick static check
         run: |
-          test -f pom.xml
+          test -f Ci-Cd/pom.xml
           echo "OK"
 
   build:
@@ -75,15 +75,15 @@ jobs:
           cache: maven
 
       - name: Package (skip tests)
-        run: mvn -B -q -DskipTests package
+        run: mvn -B -q -f Ci-Cd/pom.xml -DskipTests package
 
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-jar
           path: |
-            target/*.jar
-            **/target/*.jar
+            Ci-Cd/target/*.jar
+            Ci-Cd/**/target/*.jar
 
   notification:
     runs-on: ubuntu-latest
