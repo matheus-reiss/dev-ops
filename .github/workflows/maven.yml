@@ -90,12 +90,13 @@ jobs:
     needs: [test, build, static-checks]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Grant execute permission (scripts)
-        run: chmod +x scripts/*.sh || true
-      
       - name: Install dependencies
         run: bash scripts/install_dependencies.sh
-
-      - name: Send notification e-mail (simple mailutils)
+      - name: Send notification e-mail
+        env:
+          NOTIFY_TO_EMAIL: ${{ secrets.NOTIFY_TO_EMAIL }}
+          STATUS_TESTS:    ${{ needs.test.result }}
+          STATUS_BUILD:    ${{ needs.build.result }}
+          GITHUB_RUN_URL:  https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EMAIL_SUBJECT:   "CI/CD Notfication"
         run: bash scripts/sendEmail.sh
