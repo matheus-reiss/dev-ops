@@ -93,6 +93,9 @@ jobs:
 
       - name: Grant execute permission (scripts)
         run: chmod +x scripts/*.sh || true
+      
+      - name: Install dependencies
+        run: bash scripts/install_dependencies.sh
 
       - name: Send notification e-mail (simple mailutils)
         run: bash scripts/sendEmail.sh
