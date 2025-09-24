@@ -17,33 +17,36 @@ on:
 
 jobs:
   test:
-    runs-on: ubunto-latest
+    runs-on: ubuntu-latest
     steps:
-      -uses: actions/checkout@v4
-      
-      -name: Install dependencies
-       run: bash scripts/install_dependencies.sh
+      - uses: actions/checkout@v4
 
-      -name: Set up Java (Temurin 21) + Maven cache
-       uses: actions/setup-java@v4
-       with:
-         distribution: temurin
-         java-version: '21'
-         cache: maven
-         
-      =name: Run tests (JUnit 4)
-       run: mvn -B -q test
-       
-      -name: Upload Surefire reports
-       if: always()
-       uses: actions/upload-artifact@v4
-       with:
-         name: test-reports
-         path: "**/target/surefire-reports/**"
+      - name: Grant execute permission (scripts)
+        run: chmod +x scripts/*.sh || true
 
-static-checks:
-  runs-on: ubuntu-latest
-  steps:
+      - name: Install dependencies
+        run: bash scripts/install_dependencies.sh
+
+      - name: Set up Java (Temurin 21) + Maven cache
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Run tests (JUnit 4)
+        run: mvn -B -q test
+
+      - name: Upload Surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: "**/target/surefire-reports/**"
+
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: bash scripts/install_dependencies.sh
@@ -51,21 +54,29 @@ static-checks:
         run: |
           test -f pom.xml
           echo "OK"
-build:
-  runs-on: ubuntu-latest
-    needs: [test]  
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [test]   # build só após testes
     steps:
       - uses: actions/checkout@v4
+
+      - name: Grant execute permission (scripts)
+        run: chmod +x scripts/*.sh || true
+
       - name: Install dependencies
         run: bash scripts/install_dependencies.sh
+
       - name: Set up Java (Temurin 21) + Maven cache
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - name: Package 
+
+      - name: Package (skip tests)
         run: mvn -B -q -DskipTests package
+
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
@@ -74,15 +85,14 @@ build:
             target/*.jar
             **/target/*.jar
 
-notification:
-  needs: test
+  notification:
+    runs-on: ubuntu-latest
+    needs: [test, build, static-checks]
+    steps:
+      - uses: actions/checkout@v4
 
-  runs-on: ubuntu-latest
+      - name: Grant execute permission (scripts)
+        run: chmod +x scripts/*.sh || true
 
-  steps:
-  - uses: actions/checkout@v4
-  - name: notification
-    run: sh scripts/sendEmail.sh
-
-       
-    
+      - name: Send notification e-mail (simple mailutils)
+        run: bash scripts/sendEmail.sh
